@@ -62,7 +62,7 @@ class AuditionWindow(arcade.Window):
         self.lives = 3
 
         # Image from kenney.nl
-        self.player_sprite = arcade.Sprite("images/ship.png", SPRITE_SCALING_PLAYER)
+        self.player_sprite = arcade.Sprite("images/mship4.png", SPRITE_SCALING_PLAYER)
         self.player_sprite.center_x = 50
         self.player_sprite.center_y = 70
         self.player_list.append(self.player_sprite)
