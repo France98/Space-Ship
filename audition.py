@@ -2,6 +2,8 @@ import random
 import arcade
 import os
 
+import star
+
 SPRITE_SCALING_PLAYER = 0.5
 SPRITE_SCALING_COIN = 0.2
 SPRITE_SCALING_LASER = 0.8
@@ -33,6 +35,7 @@ class AuditionWindow(arcade.Window):
         self.player_list = None
         self.coin_list = None
         self.bullet_list = None
+        self.star_list = set()
 
         # Set up the player info
         self.player_sprite = None
@@ -56,6 +59,7 @@ class AuditionWindow(arcade.Window):
         self.player_list = arcade.SpriteList()
         self.coin_list = arcade.SpriteList()
         self.bullet_list = arcade.SpriteList()
+        self.star_list = set()
 
         # Set up the player
         self.score = 0
@@ -82,7 +86,10 @@ class AuditionWindow(arcade.Window):
             self.coin_list.append(coin)
 
         # Set the background color
-        arcade.set_background_color(arcade.color.AMAZON)
+        arcade.set_background_color((5, 2, 27))
+
+        for _ in range(25):
+            self.create_star()
 
     def on_draw(self):
         """
@@ -97,9 +104,15 @@ class AuditionWindow(arcade.Window):
         self.bullet_list.draw()
         self.player_list.draw()
 
+        for star in self.star_list:
+            star.draw()
+
         # Render the text
         arcade.draw_text(f"Score : {self.score}", 15, 15, arcade.color.WHITE, 14)
         arcade.draw_text(f"Lives : {self.lives}", SCREEN_WIDTH - 15, 15, arcade.color.WHITE, 14, align="right", anchor_x="right", anchor_y="baseline")
+
+    def create_star(self):
+        self.star_list.add(star.Star(SCREEN_WIDTH, SCREEN_HEIGHT))
 
     def on_mouse_motion(self, x, y, dx, dy):
         """
@@ -133,6 +146,10 @@ class AuditionWindow(arcade.Window):
 
     def update(self, delta_time):
         """ Movement and game logic """
+        for star in self.star_list:
+            star.x -= star.speed * delta_time
+            if star.x < 0:
+                star.reset_pos(SCREEN_WIDTH, SCREEN_HEIGHT)
 
         # Call update on bullet sprites
         self.bullet_list.update()
