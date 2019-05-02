@@ -7,7 +7,7 @@ import star
 SPRITE_SCALING_PLAYER = 0.5
 SPRITE_SCALING_COIN = 0.2
 SPRITE_SCALING_LASER = 0.8
-COIN_COUNT = 50
+COIN_COUNT = 10
 
 SCREEN_WIDTH = 1000
 SCREEN_HEIGHT = 600
@@ -15,8 +15,13 @@ SCREEN_TITLE = "Space ship"
 
 BULLET_SPEED = 5
 
+class FallingShip(arcade.Sprite):
+    def update(self):
+        self.center_y -= 2
+        if self.top < 0:
+            self.bottom = SCREEN_HEIGHT
 
-class AuditionWindow(arcade.Window):
+class SpaceShip(arcade.Window):
 
     def __init__(self):
         super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
@@ -30,14 +35,34 @@ class AuditionWindow(arcade.Window):
 
         self.player_sprite = None
         self.score = 0
+        self.level = 1
         self.lives = None
 
         self.set_mouse_visible(False)
 
         arcade.set_background_color(arcade.color.AERO_BLUE)
 
-    def setup(self):
+    def level_1(self):
+        for i in range(COIN_COUNT):
 
+            coin = arcade.Sprite("images/Gold.png", SPRITE_SCALING_COIN)
+
+            coin.center_x = random.randrange(SCREEN_WIDTH)
+            coin.center_y = random.randrange(120, SCREEN_HEIGHT)
+
+            self.coin_list.append(coin)
+
+    def level_2(self):
+        for i in range(30):
+
+            coin = FallingShip("images/mship4.png", SPRITE_SCALING_COIN)
+
+            coin.center_x = random.randrange(SCREEN_WIDTH)
+            coin.center_y = random.randrange(SCREEN_HEIGHT)
+
+            self.coin_list.append(coin)
+
+    def setup(self):
         """ Set up the game and initialize the variables. """
 
         self.player_list = arcade.SpriteList()
@@ -47,20 +72,14 @@ class AuditionWindow(arcade.Window):
 
         self.score = 0
         self.lives = 3
+        self.level = 1
 
         self.player_sprite = arcade.Sprite("images/mship4.png", SPRITE_SCALING_PLAYER)
         self.player_sprite.center_x = 50
         self.player_sprite.center_y = 70
         self.player_list.append(self.player_sprite)
 
-        for i in range(COIN_COUNT):
-
-            coin = arcade.Sprite("images/Gold.png", SPRITE_SCALING_COIN)
-
-            coin.center_x = random.randrange(SCREEN_WIDTH)
-            coin.center_y = random.randrange(120, SCREEN_HEIGHT)
-
-            self.coin_list.append(coin)
+        self.level_1()
 
         arcade.set_background_color((5, 2, 27))
 
@@ -71,7 +90,8 @@ class AuditionWindow(arcade.Window):
         """
         Render the screen.
         """
-
+        Y_TEXT_POSITION = 15
+        TEXT_SIZE = 14
         arcade.start_render()
 
         self.coin_list.draw()
@@ -81,8 +101,9 @@ class AuditionWindow(arcade.Window):
         for star in self.star_list:
             star.draw()
 
-        arcade.draw_text(f"Score : {self.score}", 15, 15, arcade.color.WHITE, 14)
-        arcade.draw_text(f"Lives : {self.lives}", SCREEN_WIDTH - 15, 15, arcade.color.WHITE, 14, align="right", anchor_x="right", anchor_y="baseline")
+        arcade.draw_text(f"Score : {self.score}", 15,  Y_TEXT_POSITION, arcade.color.WHITE,  TEXT_SIZE)
+        arcade.draw_text(f"Level: {self.level}", 10, 35, arcade.color.WHITE, 15)
+        arcade.draw_text(f"Lives : {self.lives}", SCREEN_WIDTH - 15,  Y_TEXT_POSITION, arcade.color.WHITE,  TEXT_SIZE, align="right", anchor_x="right", anchor_y="baseline")
 
     def create_star(self):
         self.star_list.add(star.Star(SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -119,6 +140,7 @@ class AuditionWindow(arcade.Window):
         for bullet in self.bullet_list:
 
             hit_list = arcade.check_for_collision_with_list(bullet, self.coin_list)
+            player_hit = arcade.check_for_collision_with_list(self.player_sprite, self.coin_list)
 
             if len(hit_list) > 0:
                 bullet.kill()
@@ -126,6 +148,10 @@ class AuditionWindow(arcade.Window):
             for coin in hit_list:
                 coin.kill()
                 self.score += 1
+
+            if len(self.coin_list) == 0 and self.level == 1:
+                self.level += 1
+                self.level_2()
 
             if bullet.bottom > SCREEN_HEIGHT:
                 bullet.kill()
