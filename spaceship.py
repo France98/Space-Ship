@@ -7,7 +7,7 @@ import star
 SPRITE_SCALING_PLAYER = 0.5
 SPRITE_SCALING_COIN = 0.2
 SPRITE_SCALING_LASER = 0.8
-COIN_COUNT = 10
+COIN_COUNT = 20
 
 SCREEN_WIDTH = 1000
 SCREEN_HEIGHT = 600
@@ -36,7 +36,7 @@ class SpaceShip(arcade.Window):
         self.player_sprite = None
         self.score = 0
         self.level = 1
-        self.lives = None
+        self.total_time = 0.0
 
         self.set_mouse_visible(False)
 
@@ -53,12 +53,12 @@ class SpaceShip(arcade.Window):
             self.coin_list.append(coin)
 
     def level_2(self):
-        for i in range(30):
+        for i in range(50):
 
             coin = FallingShip("images/mship4.png", SPRITE_SCALING_COIN)
 
             coin.center_x = random.randrange(SCREEN_WIDTH)
-            coin.center_y = random.randrange(SCREEN_HEIGHT)
+            coin.center_y = random.randrange(120,SCREEN_HEIGHT)
 
             self.coin_list.append(coin)
 
@@ -71,8 +71,8 @@ class SpaceShip(arcade.Window):
         self.star_list = set()
 
         self.score = 0
-        self.lives = 3
         self.level = 1
+        self.total_time = 60
 
         self.player_sprite = arcade.Sprite("images/mship4.png", SPRITE_SCALING_PLAYER)
         self.player_sprite.center_x = 50
@@ -98,12 +98,15 @@ class SpaceShip(arcade.Window):
         self.bullet_list.draw()
         self.player_list.draw()
 
+        minutes = int(self.total_time) // 60
+        seconds = int(self.total_time) % 60
+
         for star in self.star_list:
             star.draw()
 
         arcade.draw_text(f"Score : {self.score}", 15,  Y_TEXT_POSITION, arcade.color.WHITE,  TEXT_SIZE)
         arcade.draw_text(f"Level: {self.level}", 10, 35, arcade.color.WHITE, 15)
-        arcade.draw_text(f"Lives : {self.lives}", SCREEN_WIDTH - 15,  Y_TEXT_POSITION, arcade.color.WHITE,  TEXT_SIZE, align="right", anchor_x="right", anchor_y="baseline")
+        arcade.draw_text(f"Time : {minutes:02d}:{seconds:02d}", SCREEN_WIDTH - 15,  Y_TEXT_POSITION, arcade.color.WHITE,  TEXT_SIZE, align="right", anchor_x="right", anchor_y="baseline")
 
     def create_star(self):
         self.star_list.add(star.Star(SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -130,6 +133,7 @@ class SpaceShip(arcade.Window):
 
     def update(self, delta_time):
         """ Movement and game logic """
+        self.total_time -= delta_time
         for star in self.star_list:
             star.x -= star.speed * delta_time
             if star.x < 0:
