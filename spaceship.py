@@ -1,6 +1,7 @@
 import random
 import arcade
 import os
+from enum import Enum
 
 import star
 
@@ -14,6 +15,10 @@ SCREEN_HEIGHT = 600
 SCREEN_TITLE = "Space ship"
 
 BULLET_SPEED = 5
+
+class GameStates(Enum):
+    GAME_OVER = 0
+    RUNNING = 1
 
 class FallingShip(arcade.Sprite):
     def update(self):
@@ -37,6 +42,7 @@ class SpaceShip(arcade.Window):
         self.score = 0
         self.level = 1
         self.total_time = 0.0
+        self.state = None
 
         self.set_mouse_visible(False)
 
@@ -44,7 +50,6 @@ class SpaceShip(arcade.Window):
 
     def level_1(self):
         for i in range(COIN_COUNT):
-
             coin = arcade.Sprite("images/Gold.png", SPRITE_SCALING_COIN)
 
             coin.center_x = random.randrange(SCREEN_WIDTH)
@@ -69,10 +74,11 @@ class SpaceShip(arcade.Window):
         self.coin_list = arcade.SpriteList()
         self.bullet_list = arcade.SpriteList()
         self.star_list = set()
+        self.state = GameStates.RUNNING
 
         self.score = 0
         self.level = 1
-        self.total_time = 60
+        self.total_time = 10
 
         self.player_sprite = arcade.Sprite("images/mship4.png", SPRITE_SCALING_PLAYER)
         self.player_sprite.center_x = 50
@@ -85,6 +91,22 @@ class SpaceShip(arcade.Window):
 
         for _ in range(25):
             self.create_star()
+
+    def draw_game_over(self):
+        arcade.draw_text("Time's up",
+            self.screen_width / 2, (self.screen_height / 2) + 68,
+            arcade.color.WHITE, 54,
+            align="center", anchor_x="center", anchor_y="center"
+        )
+
+        arcade.draw_text("Press SPACE to restart",
+            self.screen_width / 2, (self.screen_height / 2),
+            arcade.color.WHITE, 24,
+            align="center", anchor_x="center", anchor_y="center"
+        )
+
+        arcade.draw_text(f"score : {self.score}", 15, 15,arcade.color.WHITE, 14,)
+        
 
     def on_draw(self):
         """
@@ -107,6 +129,8 @@ class SpaceShip(arcade.Window):
         arcade.draw_text(f"Score : {self.score}", 15,  Y_TEXT_POSITION, arcade.color.WHITE,  TEXT_SIZE)
         arcade.draw_text(f"Level: {self.level}", 10, 35, arcade.color.WHITE, 15)
         arcade.draw_text(f"Time : {minutes:02d}:{seconds:02d}", SCREEN_WIDTH - 15,  Y_TEXT_POSITION, arcade.color.WHITE,  TEXT_SIZE, align="right", anchor_x="right", anchor_y="baseline")
+        if self.state == GameStates.GAME_OVER:
+            self.draw_game_over()
 
     def create_star(self):
         self.star_list.add(star.Star(SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -140,22 +164,24 @@ class SpaceShip(arcade.Window):
                 star.reset_pos(SCREEN_WIDTH, SCREEN_HEIGHT)
 
         self.bullet_list.update()
+        
+        if self.state == GameStates.RUNNING:
+            for bullet in self.bullet_list:
 
-        for bullet in self.bullet_list:
+                hit_list = arcade.check_for_collision_with_list(bullet, self.coin_list)
+                player_hit = arcade.check_for_collision_with_list(self.player_sprite, self.coin_list)
 
-            hit_list = arcade.check_for_collision_with_list(bullet, self.coin_list)
-            player_hit = arcade.check_for_collision_with_list(self.player_sprite, self.coin_list)
+                if len(hit_list) > 0:
+                    bullet.kill()
 
-            if len(hit_list) > 0:
-                bullet.kill()
+                for coin in hit_list:
+                    coin.kill()
+                    self.score += 1
 
-            for coin in hit_list:
-                coin.kill()
-                self.score += 1
-
-            if len(self.coin_list) == 0 and self.level == 1:
-                self.level += 1
-                self.level_2()
-
-            if bullet.bottom > SCREEN_HEIGHT:
-                bullet.kill()
+                if len(self.coin_list) == 0 and self.level == 1:
+                    self.level += 1
+                    self.level_2()
+                if bullet.bottom > SCREEN_HEIGHT:
+                    bullet.kill()
+                if self.total_time <= 0:
+                    self.state = GameStates.GAME_OVER
