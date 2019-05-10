@@ -19,12 +19,7 @@ BULLET_SPEED = 5
 class GameStates(Enum):
     GAME_OVER = 0
     RUNNING = 1
-
-class FallingShip(arcade.Sprite):
-    def update(self):
-        self.center_y -= 2
-        if self.top < 0:
-            self.bottom = SCREEN_HEIGHT
+    INTRO = 2
 
 class SpaceShip(arcade.Window):
 
@@ -50,22 +45,41 @@ class SpaceShip(arcade.Window):
 
     def level_1(self):
         for i in range(COIN_COUNT):
-            coin = arcade.Sprite("images/Gold.png", SPRITE_SCALING_COIN)
+            coin = arcade.Sprite("images/mship4.png", SPRITE_SCALING_COIN)
 
             coin.center_x = random.randrange(SCREEN_WIDTH)
-            coin.center_y = random.randrange(120, SCREEN_HEIGHT)
+            coin.center_y = random.randrange(200, SCREEN_HEIGHT)
 
             self.coin_list.append(coin)
 
     def level_2(self):
+        self.total_time += 10
         for i in range(50):
 
-            coin = FallingShip("images/mship4.png", SPRITE_SCALING_COIN)
+            coin = arcade.Sprite("images/mship4.png", SPRITE_SCALING_COIN)
 
             coin.center_x = random.randrange(SCREEN_WIDTH)
-            coin.center_y = random.randrange(120,SCREEN_HEIGHT)
+            coin.center_y = random.randrange(200,SCREEN_HEIGHT)
 
             self.coin_list.append(coin)
+
+    def draw_Intro(self):
+        arcade.set_background_color((5, 2, 27))
+        for star in self.star_list:
+            star.draw()
+
+        arcade.draw_text("Space Ship",
+            SCREEN_WIDTH / 2, (SCREEN_HEIGHT / 2) + 68,
+            arcade.color.WHITE, 54,
+            align="center", anchor_x="center", anchor_y="center"
+        )
+
+        arcade.draw_text("Press SPACE to restart",
+            SCREEN_WIDTH / 2, (SCREEN_HEIGHT / 2),
+            arcade.color.WHITE, 24,
+            align="center", anchor_x="center", anchor_y="center"
+        )
+
 
     def setup(self):
         """ Set up the game and initialize the variables. """
@@ -74,11 +88,11 @@ class SpaceShip(arcade.Window):
         self.coin_list = arcade.SpriteList()
         self.bullet_list = arcade.SpriteList()
         self.star_list = set()
-        self.state = GameStates.RUNNING
+        self.state = GameStates.INTRO
 
         self.score = 0
         self.level = 1
-        self.total_time = 10
+        self.total_time = 31
 
         self.player_sprite = arcade.Sprite("images/mship4.png", SPRITE_SCALING_PLAYER)
         self.player_sprite.center_x = 50
@@ -93,29 +107,26 @@ class SpaceShip(arcade.Window):
             self.create_star()
 
     def draw_game_over(self):
+        arcade.set_background_color((5, 2, 27))
         arcade.draw_text("Time's up",
-            self.screen_width / 2, (self.screen_height / 2) + 68,
+            SCREEN_WIDTH / 2, (SCREEN_HEIGHT / 2) + 68,
             arcade.color.WHITE, 54,
             align="center", anchor_x="center", anchor_y="center"
         )
 
         arcade.draw_text("Press SPACE to restart",
-            self.screen_width / 2, (self.screen_height / 2),
+            SCREEN_WIDTH / 2, (SCREEN_HEIGHT / 2),
             arcade.color.WHITE, 24,
             align="center", anchor_x="center", anchor_y="center"
         )
+        self.total_time = 31
+        self.score = 0
+        self.level = 1
 
-        arcade.draw_text(f"score : {self.score}", 15, 15,arcade.color.WHITE, 14,)
-        
-
-    def on_draw(self):
-        """
-        Render the screen.
-        """
+    def drawGame(self):
         Y_TEXT_POSITION = 15
         TEXT_SIZE = 14
-        arcade.start_render()
-
+        arcade.set_background_color((5, 2, 27))
         self.coin_list.draw()
         self.bullet_list.draw()
         self.player_list.draw()
@@ -129,8 +140,23 @@ class SpaceShip(arcade.Window):
         arcade.draw_text(f"Score : {self.score}", 15,  Y_TEXT_POSITION, arcade.color.WHITE,  TEXT_SIZE)
         arcade.draw_text(f"Level: {self.level}", 10, 35, arcade.color.WHITE, 15)
         arcade.draw_text(f"Time : {minutes:02d}:{seconds:02d}", SCREEN_WIDTH - 15,  Y_TEXT_POSITION, arcade.color.WHITE,  TEXT_SIZE, align="right", anchor_x="right", anchor_y="baseline")
+
+    def on_draw(self):
+        """
+        Render the screen.
+        """
+        arcade.start_render()
+
+        if self.state == GameStates.INTRO:
+            self.draw_Intro()
+
+        if self.state == GameStates.RUNNING:
+            self.drawGame()
+        
         if self.state == GameStates.GAME_OVER:
             self.draw_game_over()
+            self.level = 1
+
 
     def create_star(self):
         self.star_list.add(star.Star(SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -155,6 +181,13 @@ class SpaceShip(arcade.Window):
 
         self.bullet_list.append(bullet)
 
+    def on_key_press(self, key, key_modifiers):
+        if key == arcade.key.SPACE and self.state == GameStates.INTRO:
+            self.state = GameStates.RUNNING
+        elif key == arcade.key.SPACE and self.state == GameStates.GAME_OVER:
+            self.state = GameStates.RUNNING
+
+
     def update(self, delta_time):
         """ Movement and game logic """
         self.total_time -= delta_time
@@ -169,7 +202,6 @@ class SpaceShip(arcade.Window):
             for bullet in self.bullet_list:
 
                 hit_list = arcade.check_for_collision_with_list(bullet, self.coin_list)
-                player_hit = arcade.check_for_collision_with_list(self.player_sprite, self.coin_list)
 
                 if len(hit_list) > 0:
                     bullet.kill()
@@ -177,11 +209,13 @@ class SpaceShip(arcade.Window):
                 for coin in hit_list:
                     coin.kill()
                     self.score += 1
-
+                if self.state == GameStates.GAME_OVER:
+                    self.drawGame()
+                    self.level_1()
                 if len(self.coin_list) == 0 and self.level == 1:
                     self.level += 1
                     self.level_2()
                 if bullet.bottom > SCREEN_HEIGHT:
                     bullet.kill()
-                if self.total_time <= 0:
+            if self.total_time <= 0:
                     self.state = GameStates.GAME_OVER
